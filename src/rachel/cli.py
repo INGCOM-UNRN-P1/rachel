@@ -46,12 +46,32 @@ def main_callback(
     pass
 
 
+def generar_seccion_markdown(reporte) -> str:
+    """Genera sección de análisis de control de flujo y switch/jump tables para Dredd."""
+    lines = ["## Desensamblado y Control de Flujo (Rachel)\n"]
+    lines.append(f"- **Archivo analizado:** `{reporte.archivo.name}`")
+    lines.append(f"- **Sentencias switch analizadas:** {len(reporte.estructuras)}\n")
+    if not reporte.estructuras:
+        lines.append("> [!NOTE]\n> No se encontraron sentencias `switch` en el código fuente analizado.\n")
+    else:
+        lines.append("| Función | Líneas | Casos | Estrategia Ensamblador | Complejidad |")
+        lines.append("| :--- | :---: | :---: | :--- | :---: |")
+        for e in reporte.estructuras:
+            est_nombre = "Tabla de Saltos (Jump Table)" if e.estrategia_compilacion == "jump_table" else "Árbol Binario" if e.estrategia_compilacion == "binary_tree_cmp" else "Secuencial"
+            comp_nombre = "O(1)" if e.estrategia_compilacion == "jump_table" else "O(log N)" if e.estrategia_compilacion == "binary_tree_cmp" else "O(N)"
+            lines.append(f"| `{e.funcion}()` | {e.linea_inicio}-{e.linea_fin} | {len(e.casos)} | {est_nombre} | **{comp_nombre}** |")
+        lines.append("")
+    return "\n".join(lines)
+
+
 @app.command("switch")
+@app.command("check")
 def switch_cmd(
     fuente: Path = typer.Argument(..., help="Archivo C a desensamblar e inspeccionar."),
     opt: str = typer.Option("-O2", "--opt", "-O", help="Nivel de optimización de GCC (-O0, -O1, -O2, -O3, -Os)."),
     mermaid_view: bool = typer.Option(False, "--mermaid", "-m", help="Emitir diagrama de flujo en sintaxis Mermaid."),
     json_output: bool = typer.Option(False, "--json", help="Emitir reporte en formato JSON."),
+    output_md: Optional[Path] = typer.Option(None, "--md", "--output-md", "-o", help="Generar sección de reporte en formato Markdown para fusión en Dredd."),
 ) -> None:
     """Analiza las sentencias switch del código C, visualiza su diagrama de flujo y desensambla jump tables."""
     if not fuente.is_file():
@@ -59,6 +79,13 @@ def switch_cmd(
         raise typer.Exit(code=2)
 
     reporte = analizar_archivo_c(fuente, opt_level=opt)
+
+    if output_md:
+        md_text = generar_seccion_markdown(reporte)
+        output_md.parent.mkdir(parents=True, exist_ok=True)
+        output_md.write_text(md_text, encoding="utf-8")
+        console.print(f"[green]✓ Sección Markdown generada en:[/green] [cyan]{output_md}[/cyan]")
+        raise typer.Exit(code=0)
 
     if json_output:
         print(json.dumps(reporte.to_dict(), indent=2, ensure_ascii=False))
@@ -131,6 +158,26 @@ def compare_cmd(
     tabla.add_row("Requisito", "Valores enteros/constantes", "Cualquier expresión booleana")
 
     console.print(tabla)
+
+
+@app.command("report")
+def report_cmd(
+    fuente: Path = typer.Argument(..., help="Archivo C a desensamblar."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Ruta de destino del archivo Markdown."),
+    opt: str = typer.Option("-O2", "--opt", "-O", help="Nivel de optimización."),
+) -> None:
+    """Genera directamente la sección de reporte Markdown de RACHEL para Dredd."""
+    if not fuente.is_file():
+        err_console.print(f"[red]Error:[/red] No se encontró el archivo '{fuente}'.")
+        raise typer.Exit(code=2)
+    reporte = analizar_archivo_c(fuente, opt_level=opt)
+    md_content = generar_seccion_markdown(reporte)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(md_content, encoding="utf-8")
+        console.print(f"[green]✓ Reporte Markdown generado en:[/green] [cyan]{output}[/cyan]")
+    else:
+        print(md_content)
 
 
 def main() -> None:
