@@ -177,3 +177,52 @@ check-rachel:
 ````
 
 Ejecutá `make check-rachel` antes de cada commit para asegurar que tu código conserve el estado de aprobación.
+
+---
+
+(manual-rachel-arquitectura)=
+## 7. Arquitectura Interna y Mecanismo Técnico
+
+La herramienta **`rachel`** implementa un motor de alta precisión basado en:
+
+- **Tecnología Núcleo:** `GNU objdump / GDB Disassembler + Jump Table .rodata Extractor + Control Flow Branch Predictor`.
+- **Aislamiento y Determinismo:** Diseñada para operar sin efectos colaterales en entornos de integración continua (CI), terminales de estudiantes y servidores docentes headless.
+- **Manejo de Errores Pedagógico:** Todo fallo de sintaxis, memoria o lógica se traduce en una acción prescriptiva concreta con su respectiva justificación técnica.
+
+---
+
+(manual-rachel-ecosistema)=
+## 8. Integración y Conexión con el Ecosistema
+
+````{note}
+Ninguna herramienta opera de forma aislada. **`rachel`** forma parte del pipeline integral de evaluación, verificación y enseñanza de la cátedra.
+````
+
+### Diagrama de Flujo e Interoperabilidad
+
+````{mermaid}
+graph TD
+    SRC[Código C: Sentencias switch] --> DAE[Daedalus: Compilador GCC]
+    DAE -->|Binario Compilado| RCH[Rachel: Desensamblador O(1)]
+    RCH -->|Inspección .rodata| OBJDUMP[GNU objdump Disassembler]
+    RCH -->|Verificación O(1) vs O(N)| FRR[Ferro: Perfilador de Rendimiento]
+````
+
+### Matriz de Intercambio de Datos
+
+| Canal | Herramientas Conectadas | Tipo de Datos Transferidos |
+| :--- | :--- | :--- |
+| **Entradas (Inputs)** | - `Binarios compilados con sentencias switch` | Código fuente, AST, binarios, testcases, contratos |
+| **Salidas (Outputs)** | - `ferro (análisis de saltos)`
+- `deckard (ejercicios de bajo nivel)` | Informes Markdown, diagnósticos Rich, JSON, actas |
+| **Sincronización** | `daedalus`, `ferro`, `bishop` | Validación cruzada, flags compartidos y autofix |
+
+### Pipeline de Integración Recomendado
+
+Podés encadenar `rachel` con otras herramientas del ecosistema en una única línea de comando:
+
+````{code-block} bash
+# Pipeline de integración típico
+rachel check src/despachador.c --disasm
+````
+
