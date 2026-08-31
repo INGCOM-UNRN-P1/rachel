@@ -347,3 +347,12 @@ Podés encadenar `rachel` con otras herramientas del ecosistema en una única l�
 rachel check src/despachador.c --disasm
 ````
 
+---
+
+(manual-rachel-seccion-plugins)=
+## 9. Extensión, Desarrollo de Plugins y API Python
+
+Para crear tus propias reglas, conectores de evaluación o integrar `rachel` programáticamente en pipelines de CI/CD:
+
+- 👉 **Consultá la guía completa:** [Guía de Extensión y Creación de Plugins](plugins.md)
+
