@@ -17,6 +17,9 @@ dependencies = [
 [project.scripts]
 rachel = "rachel.cli:main"
 
+[project.entry-points."ripley.plugins"]
+rachel = "rachel.ripley_plugin:RachelPlugin"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/rachel"]
 
