@@ -48,7 +48,10 @@ def main_callback(
 
 def generar_seccion_markdown(reporte) -> str:
     """Genera sección de análisis de control de flujo y switch/jump tables para Dredd."""
-    lines = ["## Desensamblado y Control de Flujo (Rachel)\n"]
+    lines = [
+        "<!-- dredd-section: rachel v1.0.0 -->\n",
+        "## Desensamblado y Control de Flujo (Rachel)\n",
+    ]
     lines.append(f"- **Archivo analizado:** `{reporte.archivo.name}`")
     lines.append(f"- **Sentencias switch analizadas:** {len(reporte.estructuras)}\n")
     if not reporte.estructuras:
@@ -59,7 +62,8 @@ def generar_seccion_markdown(reporte) -> str:
         for e in reporte.estructuras:
             est_nombre = "Tabla de Saltos (Jump Table)" if e.estrategia_compilacion == "jump_table" else "Árbol Binario" if e.estrategia_compilacion == "binary_tree_cmp" else "Secuencial"
             comp_nombre = "O(1)" if e.estrategia_compilacion == "jump_table" else "O(log N)" if e.estrategia_compilacion == "binary_tree_cmp" else "O(N)"
-            lines.append(f"| `{e.funcion}()` | {e.linea_inicio}-{e.linea_fin} | {len(e.casos)} | {est_nombre} | **{comp_nombre}** |")
+            fn_limpia = e.funcion.replace("|", "&#124;")
+            lines.append(f"| `{fn_limpia}()` | {e.linea_inicio}-{e.linea_fin} | {len(e.casos)} | {est_nombre} | **{comp_nombre}** |")
         lines.append("")
     return "\n".join(lines)
 

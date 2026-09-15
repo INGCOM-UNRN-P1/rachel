@@ -62,6 +62,7 @@ class ReporteEstructuras:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "schema_version": "1.0.0",
             "archivo": str(self.archivo),
             "total_estructuras": len(self.estructuras),
             "total_switches": self.total_switches,
