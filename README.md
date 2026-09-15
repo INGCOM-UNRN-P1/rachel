@@ -16,7 +16,7 @@ RACHEL es una herramienta pedagógica diseñada para analizar sentencias `switch
 ### Qué no cubre (Límites y Delegación)
 - Medición de contadores de hardware reales de branch misses (delegado a `ferro`).
 - Extracción de mapas globales de llamadas (delegado a `giger`).
-- Desazucarado sintáctico de código C a nivel de lenguaje (delegado a `morpheus`).
+- Desazucarado sintáctico de código C a nivel de lenguaje (no contemplado).
 
 ---
 
@@ -26,10 +26,10 @@ RACHEL es una herramienta pedagógica diseñada para analizar sentencias `switch
 - Linux / POSIX o Windows (MSYS2 / WSL). Python >= 3.10.
 
 ### Dependencias Externas y Binarios
-- `gcc` o `clang`, `objdump`.
+- `gcc` (para compilación y generación de código ensamblado `-S`).
 
 ### Integración en el Ecosistema
-- CLI `rachel`. Subcomando `rachel doctor`.
+- CLI `rachel`.
 
 ---
 
@@ -45,6 +45,9 @@ rachel switch parser.c --mermaid
 # 3. Comparar costo temporal y de memoria entre switch e if-else
 rachel compare parser.c
 
-# 4. Salida estructurada JSON
+# 4. Generar reporte consolidado Markdown
+rachel report parser.c
+
+# 5. Salida estructurada JSON
 rachel switch parser.c --json
 ```
