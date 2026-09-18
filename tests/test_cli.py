@@ -16,7 +16,7 @@ def test_cli_version():
 
 def test_cli_compare(tmp_path):
     fuente = tmp_path / "comp.c"
-    fuente.write_text("int main(void) { return 0; }\n")
+    fuente.write_text("int f(int c) {\n    switch (c) {\n        case 1: return 1;\n        default: return 0;\n    }\n}\n")
 
     res = runner.invoke(app, ["compare", str(fuente)])
     assert res.exit_code == 0

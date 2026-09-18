@@ -165,6 +165,29 @@ def analizar_assembly_real(
     return []
 
 
+def extraer_assembly_de_funcion(asm_lines: List[str], nombre: str) -> List[str]:
+    """Aísla el assembly de UNA función: desde su etiqueta hasta su `.size`.
+
+    Antes cada switch recibía las primeras 25 líneas del assembly del archivo
+    COMPLETO (cabecera `.text`, `.globl main`...), idénticas para todos, que no
+    tenían nada que ver con el switch analizado; y la detección de tabla de
+    saltos miraba el archivo entero, de modo que un `jmp *` de otra función
+    confirmaba el switch de esta.
+    """
+    bloque: List[str] = []
+    dentro = False
+    for linea in asm_lines:
+        if not dentro:
+            if linea == f"{nombre}:":
+                dentro = True
+                bloque.append(linea)
+            continue
+        if linea.startswith((f".size\t{nombre},", f".size {nombre},")):
+            break
+        bloque.append(linea)
+    return bloque
+
+
 def analizar_archivo_c(
     archivo: Path,
     opt_level: str = "-O2",
@@ -184,9 +207,19 @@ def analizar_archivo_c(
     if switches:
         asm_lines = analizar_assembly_real(archivo, opt_level=opt_level)
         if asm_lines:
-            tiene_jump_table = any("jmp\t*" in l or "jmp *" in l or ".quad\t.L" in l or ".long\t.L" in l for l in asm_lines)
             for s in switches:
-                s.instrucciones_assembly = [l for l in asm_lines if not l.startswith(".LFB")][:25]
+                asm_fn = extraer_assembly_de_funcion(asm_lines, s.funcion)
+                if not asm_fn:
+                    # La función no aparece como símbolo propio (p. ej. `static`
+                    # inlineada): no se afirma nada sobre su assembly.
+                    s.instrucciones_assembly = []
+                    s.explicacion_pedagogica += (
+                        " (No se pudo aislar el assembly de esta función; es probable que el compilador"
+                        " la haya incorporado a su llamador.)"
+                    )
+                    continue
+                s.instrucciones_assembly = [l for l in asm_fn if not l.startswith(".LFB")][:25]
+                tiene_jump_table = any("jmp\t*" in l or "jmp *" in l for l in asm_fn)
                 if tiene_jump_table:
                     s.estrategia_compilacion = "jump_table"
                     s.explicacion_pedagogica = (

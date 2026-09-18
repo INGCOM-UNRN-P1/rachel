@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import List, Optional
 
@@ -151,15 +152,36 @@ def compare_cmd(
         raise typer.Exit(code=2)
 
     reporte = analizar_archivo_c(fuente)
-    tabla = Table(title="Comparativa de Flujo: Switch vs If-Else")
-    tabla.add_column("Métrica / Aspecto", style="bold cyan")
-    tabla.add_column("Switch con Jump Table", style="green")
-    tabla.add_column("Cadena if-else if", style="yellow")
 
-    tabla.add_row("Complejidad Temporal", "O(1) constante", "O(N) lineal en peor caso")
-    tabla.add_row("Branch Prediction", "1 salto indirecto (jmp *reg)", "N saltos condicionales sucesivos")
-    tabla.add_row("Consumo de Memoria", "Tabla de punteros en .rodata", "Código de instrucciones lineal")
-    tabla.add_row("Requisito", "Valores enteros/constantes", "Cualquier expresión booleana")
+    # Antes se descartaba `reporte` y se imprimía una tabla fija idéntica para
+    # cualquier archivo, con la columna "Switch con Jump Table" aun si el fuente
+    # no tenía ni un switch. Ahora se compara cada switch REAL contra lo que le
+    # costaría la cadena if-else equivalente.
+    if not reporte.estructuras:
+        console.print(f"[yellow]No se encontraron sentencias switch en {fuente.name}: no hay nada que comparar.[/yellow]")
+        raise typer.Exit(code=0)
+
+    tabla = Table(title=f"Comparativa de Flujo: Switch vs If-Else ({fuente.name})")
+    tabla.add_column("Función", style="bold cyan")
+    tabla.add_column("Línea", justify="right")
+    tabla.add_column("Casos", justify="right")
+    tabla.add_column("Densidad", justify="right")
+    tabla.add_column("Estrategia del compilador", style="green")
+    tabla.add_column("Switch (comparaciones)", style="green")
+    tabla.add_column("Cadena if-else (peor caso)", style="yellow")
+
+    for e in reporte.estructuras:
+        n = len(e.casos)
+        if e.estrategia_compilacion == "jump_table":
+            estrategia, costo_switch = "Tabla de Saltos", "1 salto indirecto, O(1)"
+        elif e.estrategia_compilacion == "binary_tree_cmp":
+            estrategia, costo_switch = "Árbol Binario", f"~{max(1, math.ceil(math.log2(max(n, 2))))} comparaciones, O(log N)"
+        else:
+            estrategia, costo_switch = "Secuencial", f"hasta {n} comparaciones, O(N)"
+        tabla.add_row(
+            e.funcion, str(e.linea_inicio), str(n), f"{e.densidad_casos:.2f}",
+            estrategia, costo_switch, f"hasta {n} comparaciones, O(N)",
+        )
 
     console.print(tabla)
 

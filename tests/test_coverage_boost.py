@@ -49,7 +49,7 @@ def test_cli_switch_sin_switches(tmp_path):
 
 def test_cli_compare(tmp_path):
     fuente = tmp_path / "sample.c"
-    fuente.write_text("int f() { return 1; }\n")
+    fuente.write_text("int f(int c) {\n    switch (c) {\n        case 1: return 1;\n        default: return 0;\n    }\n}\n")
 
     res = runner.invoke(app, ["compare", str(fuente)])
     assert res.exit_code == 0
