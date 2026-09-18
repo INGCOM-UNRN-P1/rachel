@@ -188,6 +188,49 @@ def extraer_assembly_de_funcion(asm_lines: List[str], nombre: str) -> List[str]:
     return bloque
 
 
+def _es_salto_condicional(linea: str) -> bool:
+    partes = linea.split()
+    return bool(partes) and partes[0].startswith("j") and partes[0] != "jmp"
+
+
+def _refutar_o_confirmar(s: EstructuraControl, asm_fn: List[str], opt_level: str) -> None:
+    """Contrasta la predicción por densidad con el assembly real de la función.
+
+    La heurística (>= 4 casos y densidad >= 0,5 => tabla de saltos) solo se *confirmaba*:
+    si el assembly no tenía `jmp *`, la predicción quedaba intacta y el estudiante leía
+    "Tabla de Saltos O(1)" sobre un switch que GCC había convertido en aritmética (`lea` +
+    `cmov`). Ahora el assembly manda: un salto indirecto confirma la tabla; ningún salto
+    en absoluto es "resuelto sin saltos"; y una tabla prevista que GCC no generó se degrada
+    a la estrategia de comparaciones que corresponde.
+    """
+    tiene_tabla = any("jmp\t*" in l or "jmp *" in l for l in asm_fn)
+    if tiene_tabla:
+        s.estrategia_compilacion = "jump_table"
+        s.explicacion_pedagogica = (
+            f"Verificado por GCC ({opt_level}): Se generó una Tabla de Saltos (Jump Table) en memoria .rodata. "
+            "El salto se realiza en tiempo constante O(1) indexando un puntero indirecto."
+        )
+        return
+
+    saltos_condicionales = sum(1 for l in asm_fn if _es_salto_condicional(l))
+    if saltos_condicionales == 0:
+        s.estrategia_compilacion = "sin_saltos"
+        s.explicacion_pedagogica = (
+            f"Verificado por GCC ({opt_level}): el compilador resolvió este switch SIN ninguna instrucción de "
+            "salto, con aritmética (`lea`, `add`) y selección condicional (`cmov`, `set`). El costo es constante "
+            "O(1), pero no hay tabla de saltos: es una optimización más agresiva que la que predice la densidad."
+        )
+        return
+
+    if s.estrategia_compilacion == "jump_table":
+        s.estrategia_compilacion = "binary_tree_cmp" if len(s.casos) >= 5 else "sequential_cmp"
+        s.explicacion_pedagogica = (
+            f"La densidad de los casos ({s.densidad_casos:.2f}) haría prever una Tabla de Saltos, pero el assembly "
+            f"real de GCC ({opt_level}) no tiene ningún salto indirecto: se resolvió con {saltos_condicionales} "
+            "saltos condicionales. La densidad es una heurística; lo que decide el compilador es lo que vale."
+        )
+
+
 def analizar_archivo_c(
     archivo: Path,
     opt_level: str = "-O2",
@@ -219,13 +262,8 @@ def analizar_archivo_c(
                     )
                     continue
                 s.instrucciones_assembly = [l for l in asm_fn if not l.startswith(".LFB")][:25]
-                tiene_jump_table = any("jmp\t*" in l or "jmp *" in l for l in asm_fn)
-                if tiene_jump_table:
-                    s.estrategia_compilacion = "jump_table"
-                    s.explicacion_pedagogica = (
-                        f"Verificado por GCC ({opt_level}): Se generó una Tabla de Saltos (Jump Table) en memoria .rodata. "
-                        "El salto se realiza en tiempo constante O(1) indexando un puntero indirecto."
-                    )
+                s.verificado_con_assembly = True
+                _refutar_o_confirmar(s, asm_fn, opt_level)
 
     return ReporteEstructuras(
         archivo=archivo,

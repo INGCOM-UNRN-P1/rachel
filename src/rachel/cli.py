@@ -15,6 +15,7 @@ from rich.table import Table
 
 from rachel import __version__
 from rachel.core.analyzer import analizar_archivo_c
+from rachel.core.models import ESTRATEGIAS
 
 console = Console()
 err_console = Console(stderr=True)
@@ -61,8 +62,7 @@ def generar_seccion_markdown(reporte) -> str:
         lines.append("| Función | Líneas | Casos | Estrategia Ensamblador | Complejidad |")
         lines.append("| :--- | :---: | :---: | :--- | :---: |")
         for e in reporte.estructuras:
-            est_nombre = "Tabla de Saltos (Jump Table)" if e.estrategia_compilacion == "jump_table" else "Árbol Binario" if e.estrategia_compilacion == "binary_tree_cmp" else "Secuencial"
-            comp_nombre = "O(1)" if e.estrategia_compilacion == "jump_table" else "O(log N)" if e.estrategia_compilacion == "binary_tree_cmp" else "O(N)"
+            est_nombre, comp_nombre, _ = ESTRATEGIAS.get(e.estrategia_compilacion, ESTRATEGIAS["sequential_cmp"])
             fn_limpia = e.funcion.replace("|", "&#124;")
             lines.append(f"| `{fn_limpia}()` | {e.linea_inicio}-{e.linea_fin} | {len(e.casos)} | {est_nombre} | **{comp_nombre}** |")
         lines.append("")
@@ -109,8 +109,8 @@ def switch_cmd(
     console.print(f"\n[bold]⚡ Análisis de Sentencias Switch en {fuente.name}:[/bold]\n")
 
     for idx, e in enumerate(reporte.estructuras, 1):
-        color_est = "green" if e.estrategia_compilacion == "jump_table" else "yellow" if e.estrategia_compilacion == "binary_tree_cmp" else "blue"
-        est_nombre = "Tabla de Saltos O(1)" if e.estrategia_compilacion == "jump_table" else "Árbol Binario O(log N)" if e.estrategia_compilacion == "binary_tree_cmp" else "Comparación Secuencial O(N)"
+        nombre_e, complejidad_e, color_est = ESTRATEGIAS.get(e.estrategia_compilacion, ESTRATEGIAS["sequential_cmp"])
+        est_nombre = f"{nombre_e} {complejidad_e}"
 
         resumen = (
             f"• Función: [bold cyan]{e.funcion}[/bold cyan] (Líneas {e.linea_inicio} a {e.linea_fin})\n"
@@ -174,6 +174,8 @@ def compare_cmd(
         n = len(e.casos)
         if e.estrategia_compilacion == "jump_table":
             estrategia, costo_switch = "Tabla de Saltos", "1 salto indirecto, O(1)"
+        elif e.estrategia_compilacion == "sin_saltos":
+            estrategia, costo_switch = "Sin saltos (cmov)", "0 saltos, O(1)"
         elif e.estrategia_compilacion == "binary_tree_cmp":
             estrategia, costo_switch = "Árbol Binario", f"~{max(1, math.ceil(math.log2(max(n, 2))))} comparaciones, O(log N)"
         else:

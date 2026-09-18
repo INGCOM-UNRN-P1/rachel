@@ -55,5 +55,6 @@ def test_analisis_completo_con_assembly(tmp_path):
     rep = analizar_archivo_c(fuente, opt_level="-O2")
     assert rep.total_switches == 1
     s = rep.estructuras[0]
-    assert s.estrategia_compilacion in ("jump_table", "binary_tree_cmp", "sequential_cmp")
+    assert s.estrategia_compilacion in ("jump_table", "sin_saltos", "binary_tree_cmp", "sequential_cmp")
+    assert s.verificado_con_assembly is True
     assert "graph TD" in s.diagrama_mermaid

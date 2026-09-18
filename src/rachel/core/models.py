@@ -7,6 +7,15 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+# estrategia -> (nombre, complejidad, color de la terminal)
+ESTRATEGIAS = {
+    "jump_table": ("Tabla de Saltos (Jump Table)", "O(1)", "green"),
+    "sin_saltos": ("Resuelto sin saltos (aritmética o cmov)", "O(1)", "green"),
+    "binary_tree_cmp": ("Árbol Binario", "O(log N)", "yellow"),
+    "sequential_cmp": ("Secuencial", "O(N)", "blue"),
+}
+
+
 @dataclass
 class CasoSwitch:
     """Representa una rama 'case' en un switch."""
@@ -25,7 +34,8 @@ class EstructuraControl:
     linea_fin: int
     codigo_fuente: str
     casos: List[CasoSwitch] = field(default_factory=list)
-    estrategia_compilacion: str = "sequential_cmp"  # "jump_table", "binary_tree_cmp", "sequential_cmp"
+    estrategia_compilacion: str = "sequential_cmp"  # ver ESTRATEGIAS
+    verificado_con_assembly: bool = False           # True si el assembly real confirmó o corrigió la predicción
     densidad_casos: float = 1.0                     # Ratio casos / (max - min + 1)
     instrucciones_assembly: List[str] = field(default_factory=list)
     diagrama_mermaid: str = ""
@@ -39,6 +49,7 @@ class EstructuraControl:
             "linea_fin": self.linea_fin,
             "cantidad_casos": len(self.casos),
             "estrategia_compilacion": self.estrategia_compilacion,
+            "verificado_con_assembly": self.verificado_con_assembly,
             "densidad_casos": self.densidad_casos,
             "instrucciones_assembly": self.instrucciones_assembly[:15],
             "diagrama_mermaid": self.diagrama_mermaid,
