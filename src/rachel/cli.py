@@ -14,7 +14,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from rachel import __version__
-from rachel.core.analyzer import analizar_archivo_c
+from rachel.core.analyzer import analizar_archivo_c, validar_opt_level
 from rachel.core.models import ESTRATEGIAS
 
 console = Console()
@@ -83,6 +83,11 @@ def switch_cmd(
         err_console.print(f"[red]Error:[/red] No se encontró el archivo '{fuente}'.")
         raise typer.Exit(code=2)
 
+    try:
+        validar_opt_level(opt)
+    except ValueError as e:
+        err_console.print(f"[red]Error:[/red] {e}")
+        raise typer.Exit(code=2)
     reporte = analizar_archivo_c(fuente, opt_level=opt)
 
     if output_md:
@@ -197,6 +202,11 @@ def report_cmd(
     """Genera directamente la sección de reporte Markdown de RACHEL para Dredd."""
     if not fuente.is_file():
         err_console.print(f"[red]Error:[/red] No se encontró el archivo '{fuente}'.")
+        raise typer.Exit(code=2)
+    try:
+        validar_opt_level(opt)
+    except ValueError as e:
+        err_console.print(f"[red]Error:[/red] {e}")
         raise typer.Exit(code=2)
     reporte = analizar_archivo_c(fuente, opt_level=opt)
     md_content = generar_seccion_markdown(reporte)

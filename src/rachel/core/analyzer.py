@@ -137,6 +137,18 @@ def _generar_mermaid_switch(casos: List[CasoSwitch], condicion: str) -> str:
     return "\n".join(lineas)
 
 
+_OPT_VALIDOS = ("-O0", "-O1", "-O2", "-O3", "-Os", "-Og", "-Ofast")
+
+
+def validar_opt_level(opt_level: str) -> str:
+    """Acepta solo niveles de optimización de GCC; evita inyectar flags arbitrarios."""
+    if opt_level not in _OPT_VALIDOS:
+        raise ValueError(
+            f"Nivel de optimización inválido: {opt_level!r}. Usá uno de: {', '.join(_OPT_VALIDOS)}."
+        )
+    return opt_level
+
+
 def analizar_assembly_real(
     archivo_c: Path,
     opt_level: str = "-O2",
@@ -147,6 +159,7 @@ def analizar_assembly_real(
     devolviendo una lista vacía: el análisis estático preliminar del switch
     sigue siendo válido y no tiene por qué caerse con un traceback.
     """
+    validar_opt_level(opt_level)
     compilador = shutil.which("gcc") or shutil.which("clang")
     if not compilador:
         return []

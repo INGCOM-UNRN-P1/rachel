@@ -53,3 +53,14 @@ def test_cli_doctor():
     assert '"herramienta": "rachel"' in res_json.stdout
     assert '"ok": true' in res_json.stdout
 
+
+
+def test_opt_rechaza_flags_arbitrarios(tmp_path):
+    """RACHEL-D0305: --opt solo acepta niveles -O de GCC."""
+    f = tmp_path / "s.c"
+    f.write_text("int f(int x) { switch (x) { case 1: return 1; default: return 0; } }\n")
+    for cmd in (["check", str(f), "--opt", "-O2 -o /tmp/x"], ["report", str(f), "--opt", "-fplugin=evil.so"]):
+        res = runner.invoke(app, cmd)
+        assert res.exit_code == 2
+        assert "inválido" in res.output
+    assert runner.invoke(app, ["check", str(f), "--opt", "-O1"]).exit_code == 0
