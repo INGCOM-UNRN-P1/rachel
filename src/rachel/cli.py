@@ -50,8 +50,9 @@ def main_callback(
 
 def generar_seccion_markdown(reporte) -> str:
     """Genera sección de análisis de control de flujo y switch/jump tables para Dredd."""
+    status = "ok"
     lines = [
-        "<!-- dredd-section: rachel v1.0.0 -->\n",
+        f"<!-- dredd-section: rachel, tool=rachel, version=1.0.0, status={status} -->\n",
         "## Desensamblado y Control de Flujo (Rachel)\n",
     ]
     lines.append(f"- **Archivo analizado:** `{reporte.archivo.name}`")
