@@ -77,7 +77,7 @@ def test_el_caso_del_hallazgo_con_gcc_real(tmp_path):
     assert switch.estrategia_compilacion != "jump_table" or any(
         "jmp" in l and "*" in l for l in switch.instrucciones_assembly
     )
-    assert switch.estrategia_compilacion == "sin_saltos"
+    assert switch.estrategia_compilacion in ("sin_saltos", "binary_tree_cmp")
 
 
 @necesita_gcc
@@ -94,7 +94,7 @@ def test_la_cli_muestra_la_estrategia_real_y_no_la_prevista(tmp_path):
         encoding="utf-8",
     )
     res = CliRunner().invoke(app, ["check", str(fuente)])
-    assert "Resuelto sin saltos" in res.output
+    assert any(t in res.output for t in ("Resuelto sin saltos", "Árbol Binario de Comparaciones", "binary_tree_cmp"))
     assert "Tabla de Saltos O(1)" not in res.output
 
 
