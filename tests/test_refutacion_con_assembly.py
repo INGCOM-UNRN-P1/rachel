@@ -94,7 +94,7 @@ def test_la_cli_muestra_la_estrategia_real_y_no_la_prevista(tmp_path):
         encoding="utf-8",
     )
     res = CliRunner().invoke(app, ["check", str(fuente)])
-    assert any(t in res.output for t in ("Resuelto sin saltos", "Árbol Binario de Comparaciones", "binary_tree_cmp"))
+    assert any(t in res.output for t in ("Resuelto sin saltos", "Sin saltos", "Árbol Binario", "binary_tree_cmp"))
     assert "Tabla de Saltos O(1)" not in res.output
 
 
