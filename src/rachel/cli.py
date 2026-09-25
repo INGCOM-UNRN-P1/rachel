@@ -21,6 +21,7 @@ console = Console()
 err_console = Console(stderr=True)
 
 app = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
     name="rachel",
     help="⚡ RACHEL — Desensamblador y visualizador pedagógico de estructuras de control y jump tables en C.",
     add_completion=True,
