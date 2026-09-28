@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
+from rachel import __version__
 from rachel.core.analyzer import analizar_archivo_c
 
 
@@ -12,7 +13,7 @@ class RachelPlugin:
     """Expone el análisis de switches de RACHEL como observaciones JSON."""
 
     name = "rachel"
-    version = "0.1.0"
+    version = __version__
 
     def is_available(self) -> bool:
         return True
