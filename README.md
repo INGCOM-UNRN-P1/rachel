@@ -53,3 +53,32 @@ rachel report parser.c
 # 5. Salida estructurada JSON
 rachel switch parser.c --json
 ```
+
+<!-- p1:referencia:inicio — generado por p1-tools/scripts/readme_generado.py: no editar a mano -->
+
+## Referencia rápida
+
+### Requisitos
+
+- Python ≥ 3.11 y [uv](https://docs.astral.sh/uv/getting-started/installation/).
+- Programas del sistema: `gcc`.
+
+| Sistema | `gcc` |
+|:--|:--|
+| Debian / Ubuntu | `sudo apt install gcc` |
+| Fedora | `sudo dnf install gcc` |
+| Windows | incluido en el entorno de la cátedra (MSYS2 UCRT64) |
+| macOS | `xcode-select --install` (clang como `gcc`) |
+
+### Comandos
+
+| Comando | Descripción |
+|:--|:--|
+| `rachel check`, `rachel switch` | Analiza las sentencias switch del código C, visualiza su diagrama de flujo y desensambla jump tables. |
+| `rachel compare` | Compara el costo computacional entre la implementación de switch vs cadenas de if-else. |
+| `rachel report` | Genera directamente la sección de reporte Markdown de RACHEL para Dredd. |
+| `rachel doctor` | Verifica el estado del entorno de RACHEL (Python, GCC, objdump). |
+
+Ayuda de cada comando: `rachel <comando> -h`.
+
+<!-- p1:referencia:fin -->
