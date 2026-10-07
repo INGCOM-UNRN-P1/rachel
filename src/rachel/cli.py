@@ -90,24 +90,24 @@ def switch_cmd(
         raise typer.Exit(code=0)
 
     if mermaid_view:
-        for e in reporte.estructuras:
-            console.print(f"%% Diagrama de switch en {e.funcion}() (Línea {e.linea_inicio})")
-            console.print(e.diagrama_mermaid + "\n")
+        for est in reporte.estructuras:
+            console.print(f"%% Diagrama de switch en {est.funcion}() (Línea {est.linea_inicio})")
+            console.print(est.diagrama_mermaid + "\n")
         raise typer.Exit(code=0)
 
     console.print(f"\n[bold]⚡ Análisis de Sentencias Switch en {fuente.name}:[/bold]\n")
 
-    for idx, e in enumerate(reporte.estructuras, 1):
-        nombre_e, complejidad_e, color_est = ESTRATEGIAS.get(e.estrategia_compilacion, ESTRATEGIAS["sequential_cmp"])
+    for idx, est in enumerate(reporte.estructuras, 1):
+        nombre_e, complejidad_e, color_est = ESTRATEGIAS.get(est.estrategia_compilacion, ESTRATEGIAS["sequential_cmp"])
         est_nombre = f"{nombre_e} {complejidad_e}"
 
         resumen = (
-            f"• Función: [bold cyan]{e.funcion}[/bold cyan] (Líneas {e.linea_inicio} a {e.linea_fin})\n"
-            f"• Cantidad de casos: [bold]{len(e.casos)}[/bold] (Densidad de claves: [bold]{e.densidad_casos:.2f}[/bold])\n"
+            f"• Función: [bold cyan]{est.funcion}[/bold cyan] (Líneas {est.linea_inicio} a {est.linea_fin})\n"
+            f"• Cantidad de casos: [bold]{len(est.casos)}[/bold] (Densidad de claves: [bold]{est.densidad_casos:.2f}[/bold])\n"
             f"• Estrategia de compilación GCC ({opt}): [{color_est}][bold]{est_nombre}[/bold][/{color_est}]\n"
-            f"• Explicación: {e.explicacion_pedagogica}"
+            f"• Explicación: {est.explicacion_pedagogica}"
         )
-        console.print(Panel(resumen, title=f"Switch #{idx} en {e.funcion}()", border_style="cyan"))
+        console.print(Panel(resumen, title=f"Switch #{idx} en {est.funcion}()", border_style="cyan"))
 
         # Casos
         tabla_casos = Table(title="Detalle de Casos")
@@ -115,15 +115,15 @@ def switch_cmd(
         tabla_casos.add_column("Línea", justify="center")
         tabla_casos.add_column("Tipo", justify="center")
 
-        for c in e.casos:
+        for c in est.casos:
             tipo_caso = "[dim]default[/dim]" if c.es_default else "case constante"
             tabla_casos.add_row(c.etiqueta, str(c.linea), tipo_caso)
 
         console.print(tabla_casos)
 
         # Fragmento de Assembly si existe
-        if e.instrucciones_assembly:
-            asm_snippet = "\n".join(e.instrucciones_assembly[:12])
+        if est.instrucciones_assembly:
+            asm_snippet = "\n".join(est.instrucciones_assembly[:12])
             console.print(Panel(
                 Syntax(asm_snippet, "asm", theme="monokai", line_numbers=True),
                 title=f"🔬 Fragmento Assembly ({opt})",
@@ -255,7 +255,7 @@ def doctor_cmd(
     for c in diagnostico:
         color = "bold green" if c["estado"] == "OK" else "bold red"
         simbolo = "✓" if c["estado"] == "OK" else "✗"
-        tabla.add_row(c["componente"], f"[{color}]{simbolo} {c['estado']}[/{color}]", c["detalle"])
+        tabla.add_row(str(c["componente"]), f"[{color}]{simbolo} {c['estado']}[/{color}]", str(c["detalle"]))
 
     console.print(tabla)
     if not todo_ok:
