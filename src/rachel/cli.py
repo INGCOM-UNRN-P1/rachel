@@ -71,7 +71,7 @@ def switch_cmd(
         validar_opt_level(opt)
     except ValueError as e:
         err_console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2) from e
     reporte = analizar_archivo_c(fuente, opt_level=opt)
 
     if output_md:
@@ -191,7 +191,7 @@ def report_cmd(
         validar_opt_level(opt)
     except ValueError as e:
         err_console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(code=2)
+        raise typer.Exit(code=2) from e
     reporte = analizar_archivo_c(fuente, opt_level=opt)
     md_content = generar_seccion_markdown(reporte)
     if output:
