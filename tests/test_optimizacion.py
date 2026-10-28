@@ -85,3 +85,10 @@ def test_compare_opt_cli_json():
     assert res.exit_code == 0
     datos = json.loads(res.stdout)
     assert {f["nombre"] for f in datos["funciones"]} >= {"cuadrado", "mcd", "dia"}
+
+
+@necesita_gcc
+def test_vectorizacion_y_desenrollado_con_o3():
+    suma = next(c for c in comparar_optimizacion(DATOS / "datos_opt.c", "-O3") if c.nombre == "suma_cuadrados")
+    assert suma.o2 is not None and suma.o2.simd > 0
+    assert any(t.startswith("Vectorización") for t in suma.transformaciones)
