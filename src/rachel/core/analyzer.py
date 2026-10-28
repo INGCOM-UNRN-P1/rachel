@@ -121,7 +121,8 @@ def extraer_switches_c(
 def _buscar_nombre_funcion_envolvente(contenido: str, pos: int) -> str:
     """Busca el nombre de la función que contiene la posición pos."""
     texto_previo = contenido[:pos]
-    re_fn = re.compile(r"^\s*(?:[a-zA-Z0-9_*]+\s+)+([a-zA-Z0-9_]+)\s*\([^)]*\)\s*\{", re.MULTILINE)
+    # `const char *dia(int d)`: el `*` puede ir pegado al nombre (antes se tomaba la función anterior).
+    re_fn = re.compile(r"^\s*(?:[a-zA-Z0-9_*]+\s+)+\**([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)\s*\{", re.MULTILINE)
     matches = list(re_fn.finditer(texto_previo))
     if matches:
         return matches[-1].group(1)

@@ -58,3 +58,14 @@ def test_analisis_completo_con_assembly(tmp_path):
     assert s.estrategia_compilacion in ("jump_table", "sin_saltos", "binary_tree_cmp", "sequential_cmp")
     assert s.verificado_con_assembly is True
     assert "graph TD" in s.diagrama_mermaid
+
+
+def test_funcion_que_devuelve_un_puntero(tmp_path):
+    """`const char *nombre(int d)`: el switch es de `nombre`, no de la función anterior."""
+    from rachel.core.analyzer import analizar_archivo_c
+
+    fuente = tmp_path / "dias.c"
+    fuente.write_text("int primero(void)\n{\n    return 1;\n}\n\nconst char *nombre(int d)\n{\n"
+                      "    switch (d)\n    {\n    case 1: return \"lunes\";\n    case 2: return \"martes\";\n"
+                      "    default: return \"otro\";\n    }\n}\n", encoding="utf-8")
+    assert [e.funcion for e in analizar_archivo_c(fuente).estructuras] == ["nombre"]
