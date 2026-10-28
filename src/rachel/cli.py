@@ -50,6 +50,9 @@ def generar_seccion_markdown(reporte) -> str:
             fn_limpia = e.funcion.replace("|", "&#124;")
             lines.append(f"| `{fn_limpia}()` | {e.linea_inicio}-{e.linea_fin} | {len(e.casos)} | {est_nombre} | **{comp_nombre}** |")
         lines.append("")
+    for c in reporte.cadenas_if:
+        tipo = "NOTE" if c.convertida_por_gcc else "WARNING"
+        lines.append(f"> [!{tipo}]\n> **Cadena de if-else en `{c.funcion}()`:** {c.mensaje}\n")
     return "\n".join(lines)
 
 
@@ -129,6 +132,103 @@ def switch_cmd(
                 title=f"🔬 Fragmento Assembly ({opt})",
                 border_style="dim",
             ))
+
+
+def _o_salir(funcion, *args, **kwargs):
+    from rachel.core.optimizacion import SinCompilador
+
+    try:
+        return funcion(*args, **kwargs)
+    except (SinCompilador, ValueError) as exc:
+        err_console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(code=2) from exc
+
+
+@app.command("compare-opt")
+def compare_opt_cmd(
+    fuente: Path = typer.Argument(..., exists=True, dir_okay=False, help="Archivo C a compilar con -O0 y con -O2."),
+    opt: str = typer.Option("-O2", "--opt", "-O", help="Nivel con el que se compara -O0 (-O1, -O2, -O3, -Os)."),
+    json_output: bool = typer.Option(False, "--json", help="Emitir la comparación en JSON."),
+) -> None:
+    """Compara el assembly de -O0 y -O2 por función y explica en español qué transformó el optimizador.
+
+    Instrucciones, saltos condicionales, llamadas y accesos a la pila de cada versión, y las transformaciones
+    reconocidas: inlining, variables en registros, vectorización, desenrollado, saltos reemplazados por cmov,
+    recursión de cola convertida en lazo y lazos resueltos en tiempo de compilación.
+    """
+    from rachel.core.optimizacion import comparar_optimizacion
+
+    comparacion = _o_salir(comparar_optimizacion, fuente, opt)
+    if json_output:
+        print(json.dumps({"schema_version": "1.0.0", "archivo": str(fuente), "opt": opt, "funciones": [
+            {"nombre": c.nombre, "O0": vars(c.o0), opt.lstrip("-"): vars(c.o2) if c.o2 else None,
+             "transformaciones": c.transformaciones} for c in comparacion]}, indent=2, ensure_ascii=False))
+        return
+    tabla = Table(title=f"-O0 contra {opt} ({fuente.name})")
+    for col in ("Función", "Instrucciones", "Saltos condicionales", "Llamadas", "Accesos a la pila"):
+        tabla.add_column(col, justify="left" if col == "Función" else "right")
+
+    def par(a: int, b: Optional[int]) -> str:
+        return f"{a} → {b}" if b is not None else f"{a} → (incorporada)"
+
+    for c in comparacion:
+        o2 = c.o2
+        tabla.add_row(f"{c.nombre}()", par(c.o0.instrucciones, o2.instrucciones if o2 else None),
+                      par(c.o0.saltos_condicionales, o2.saltos_condicionales if o2 else None),
+                      par(len(c.o0.llamadas), len(o2.llamadas) if o2 else None),
+                      par(c.o0.accesos_pila, o2.accesos_pila if o2 else None))
+    console.print(tabla)
+    for c in comparacion:
+        if c.transformaciones:
+            console.print(f"\n[bold cyan]{c.nombre}()[/bold cyan]")
+            for t in c.transformaciones:
+                console.print(f"  • {t}")
+
+
+@app.command("cadenas")
+def cadenas_cmd(
+    fuente: Path = typer.Argument(..., exists=True, dir_okay=False, help="Archivo C a revisar."),
+    opt: str = typer.Option("-O2", "--opt", "-O", help="Nivel de optimización con que se mira el assembly."),
+    json_output: bool = typer.Option(False, "--json", help="Emitir en JSON."),
+) -> None:
+    """Cadenas de if / else if de más de 4 comparaciones con constantes, que conviene escribir como switch.
+
+    Con el assembly se distingue la cadena que GCC ya convirtió en una tabla de la que quedó como una
+    comparación tras otra. Sale con 1 si hay alguna de estas últimas.
+    """
+    from rachel.core.optimizacion import evaluar_cadenas
+
+    cadenas = _o_salir(evaluar_cadenas, fuente, opt)
+    if json_output:
+        print(json.dumps({"schema_version": "1.0.0", "archivo": str(fuente), "cadenas_if": [vars(c) for c in cadenas]},
+                         indent=2, ensure_ascii=False))
+    elif not cadenas:
+        console.print(f"[green]{fuente.name}: no hay cadenas de if-else de más de 4 comparaciones con constantes.[/green]")
+    else:
+        for c in cadenas:
+            color = "cyan" if c.convertida_por_gcc else "yellow"
+            console.print(f"[{color}]{fuente.name}:{c.linea_inicio} ({c.funcion}):[/{color}] {c.mensaje}")
+    raise typer.Exit(code=1 if any(not c.convertida_por_gcc for c in cadenas) else 0)
+
+
+@app.command("desazucarar")
+def desazucarar_cmd(
+    fuente: Path = typer.Argument(..., exists=True, dir_okay=False, help="Archivo C a desensamblar."),
+    funcion: Optional[str] = typer.Option(None, "--funcion", "-f", help="Sólo esta función."),
+    opt: str = typer.Option("-O0", "--opt", "-O", help="Nivel de optimización (con -O0 cada if se ve tal cual)."),
+) -> None:
+    """Assembly anotado: cada cmp/test y salto condicional con la condición en C que evalúa.
+
+    `jle .L2` después de `cmpl $5, -4(%rbp)` se lee «salta a .L2 si x <= 5: es decir, cuando «x > 5» es
+    falsa». Los nombres de las variables y las líneas de C salen de gcc -fverbose-asm.
+    """
+    from rachel.core.optimizacion import desazucarar
+
+    texto = _o_salir(desazucarar, fuente, opt, funcion)
+    if funcion and not texto.strip():
+        err_console.print(f"[red]Error:[/red] no hay una función {funcion}() en {fuente.name}.")
+        raise typer.Exit(code=2)
+    print(texto, end="")
 
 
 @app.command("compare")

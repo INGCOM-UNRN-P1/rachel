@@ -279,7 +279,10 @@ def analizar_archivo_c(
                 s.verificado_con_assembly = True
                 _refutar_o_confirmar(s, asm_fn, opt_level)
 
+    from rachel.core.optimizacion import evaluar_cadenas
+
     return ReporteEstructuras(
         archivo=archivo,
         estructuras=switches,
+        cadenas_if=evaluar_cadenas(archivo, opt_level),
     )

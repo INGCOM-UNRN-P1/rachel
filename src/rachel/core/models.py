@@ -62,6 +62,8 @@ class ReporteEstructuras:
     """Reporte consolidado de todas las estructuras de control de un archivo."""
     archivo: Path
     estructuras: List[EstructuraControl] = field(default_factory=list)
+    # Cadenas if / else if de más de 4 comparaciones con constantes (Ola 19): optimizacion.CadenaIf.
+    cadenas_if: List[Any] = field(default_factory=list)
 
     @property
     def total_switches(self) -> int:
@@ -79,4 +81,5 @@ class ReporteEstructuras:
             "total_switches": self.total_switches,
             "total_jump_tables": self.total_jump_tables,
             "estructuras": [e.to_dict() for e in self.estructuras],
+            "cadenas_if": [vars(c) for c in self.cadenas_if],
         }
